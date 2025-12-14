@@ -54,6 +54,52 @@ function UserListModal({ title, users, onClose }) {
     );
 }
 
+function EditProfileModal({ currentBio, onClose, onSave }) {
+    const [bio, setBio] = useState(currentBio || '');
+    const [file, setFile] = useState(null);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(bio, file);
+    };
+
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.65)', zIndex: 1100, display: 'flex', justifyContent: 'center', alignItems: 'center'
+        }}>
+            <div style={{
+                background: 'var(--card)', padding: '20px', borderRadius: '12px', width: '400px',
+                display: 'flex', flexDirection: 'column', gap: '15px', color: 'var(--foreground)'
+            }}>
+                <h3 style={{ textAlign: 'center' }}>Edit Profile</h3>
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Profile Photo</label>
+                        <input type="file" onChange={e => setFile(e.target.files[0])} accept="image/*" />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Bio</label>
+                        <textarea
+                            value={bio}
+                            onChange={e => setBio(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--secondary)', color: 'inherit', resize: 'vertical', minHeight: '80px' }}
+                            placeholder="Write something about yourself..."
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button type="submit" className="btn" style={{ flex: 1 }}>Save</button>
+                        <button type="button" className="btn" onClick={onClose} style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)', color: 'var(--foreground)' }}>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
 function SettingsModal({ isPrivate, onTogglePrivacy, onClose, onDeleteAccount }) {
     const { theme, toggleTheme } = useTheme();
 
@@ -128,6 +174,7 @@ export default function Profile({ params }) {
     const [modalTitle, setModalTitle] = useState('');
     const [modalUsers, setModalUsers] = useState([]);
     const [showSettings, setShowSettings] = useState(false);
+    const [showEditProfile, setShowEditProfile] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -229,13 +276,14 @@ export default function Profile({ params }) {
         setShowModal(true);
     };
 
-    const handleProfilePicChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
+    const updateProfile = async (newBio, newFile) => {
         const token = localStorage.getItem('token');
         const formData = new FormData();
-        formData.append('profile_picture', file);
+
+        formData.append('bio', newBio);
+        if (newFile) {
+            formData.append('profile_picture', newFile);
+        }
 
         try {
             const res = await fetch(`http://localhost:8000/api/users/${username}/`, {
@@ -246,7 +294,8 @@ export default function Profile({ params }) {
 
             if (res.ok) {
                 const data = await res.json();
-                setProfile(prev => ({ ...prev, profile_picture: data.profile_picture }));
+                setProfile(prev => ({ ...prev, profile_picture: data.profile_picture, bio: data.bio }));
+                setShowEditProfile(false);
             }
         } catch (err) {
             console.error(err);
@@ -274,12 +323,21 @@ export default function Profile({ params }) {
     return (
         <div style={{ maxWidth: '935px', margin: '0 auto', padding: '30px 20px' }}>
             {showModal && <UserListModal title={modalTitle} users={modalUsers} onClose={() => setShowModal(false)} />}
+
             {showSettings && (
                 <SettingsModal
                     isPrivate={profile.is_private}
                     onTogglePrivacy={togglePrivacy}
                     onClose={() => setShowSettings(false)}
                     onDeleteAccount={handleDeleteAccount}
+                />
+            )}
+
+            {showEditProfile && (
+                <EditProfileModal
+                    currentBio={profile.bio}
+                    onClose={() => setShowEditProfile(false)}
+                    onSave={updateProfile}
                 />
             )}
 
@@ -301,10 +359,9 @@ export default function Profile({ params }) {
                         <h2 style={{ fontSize: '28px', fontWeight: '300', marginRight: '20px' }}>{profile.username}</h2>
                         {isOwner ? (
                             <>
-                                <button className="btn" onClick={() => document.getElementById('profilePicInput').click()} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--foreground)', marginRight: '10px' }}>
+                                <button className="btn" onClick={() => setShowEditProfile(true)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--foreground)', marginRight: '10px' }}>
                                     Edit Profile
                                 </button>
-                                <input id="profilePicInput" type="file" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
                                 <button className="btn" onClick={() => setShowSettings(true)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--foreground)' }}>
                                     Settings
                                 </button>
@@ -322,8 +379,9 @@ export default function Profile({ params }) {
                         <span onClick={openFollowing} style={{ cursor: 'pointer' }}><b>{profile.following_count}</b> following</span>
                     </div>
 
-                    <div style={{ marginTop: '20px', fontWeight: '600' }}>
-                        {profile.first_name} {profile.last_name}
+                    <div style={{ marginTop: '20px' }}>
+                        <div style={{ fontWeight: '600' }}>{profile.first_name} {profile.last_name}</div>
+                        {profile.bio && <div style={{ marginTop: '5px', whiteSpace: 'pre-wrap' }}>{profile.bio}</div>}
                     </div>
                 </div>
             </div>
