@@ -4,6 +4,7 @@ A social media app built with Django and Next.js.
 
 ## What is this?
 It's an Instagram-like app where you can post photos/videos, share stories, and follow your friends. It supports private accounts, follow requests, and has a dark mode.You can also delete your account along with all your photos/videos, stories, posts etc. The gradient in the background dances along your cursor!
+Also you can be very creative about yourself in the bio section!!
 
 ## Codebase
 - **Backend**: Django REST Framework
@@ -66,4 +67,8 @@ https://github.com/user-attachments/assets/677d938c-c822-4457-9115-39e892d76b24
 
 
 https://github.com/user-attachments/assets/cc84b593-ba11-465b-8619-de13b8089a93
+
+
+https://github.com/user-attachments/assets/6c711171-5ac2-47ce-b039-2888cbe9969c
+
 
